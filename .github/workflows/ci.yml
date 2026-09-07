@@ -1,0 +1,19 @@
+# 每次推送/PR：编译验证 + CLI 冒烟测试。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 编译
+        run: swift build -c release
+
+      - name: CLI 冒烟测试
+        run: .build/release/mug-uninstaller-cli list | head -5
