@@ -25,8 +25,12 @@ public struct ScanResult {
 /// - 守护进程 label 常为 bid 的 vendor.product 前缀（com.youqu.todesk.* ≠ bid com.youqu.todesk.mac）
 /// - PrivilegedHelperTools 需目录枚举（helper 名 ≠ 应用名）
 public enum LeftoverScanner {
+    /// 截图/mock 模式开关（仅工具进程置 true，正式应用不受影响）
+    public static var isMocking = false
+
     /// 扫描一个应用的全部残留。bid 可能为 nil（无 bundle id 的怪异 app）。
     public static func scan(bundleID bid: String?, appName name: String) -> ScanResult {
+        if isMocking { return mockLeftovers(bid: bid, appName: name) }
         let fm = FileManager.default
         // key -> (conf, reasons, displayPath)
         var found: [String: (Confidence, Set<String>, String)] = [:]
@@ -148,6 +152,29 @@ public enum LeftoverScanner {
         }.sorted { lhs, rhs in
             lhs.confidence != rhs.confidence ? lhs.confidence > rhs.confidence : lhs.path < rhs.path
         }
+        return ScanResult(target: name, bundleID: bid, leftovers: items)
+    }
+
+    // MARK: - Mock 数据（README 截图用：脱敏残留路径）
+
+    static func mockLeftovers(bid: String?, appName name: String) -> ScanResult {
+        let home = NSHomeDirectory()
+        let items = [
+            Leftover(path: "\(home)/Library/Application Support/Chrome",
+                     confidence: .high, reasons: ["Application Support"], sizeKB: 1_258_291),
+            Leftover(path: "\(home)/Library/LaunchAgents/com.google.keystone.agent.plist",
+                     confidence: .high, reasons: ["Launch Label:com.google.keystone.agent"], sizeKB: 1),
+            Leftover(path: "\(home)/Library/Preferences/com.google.Chrome.plist",
+                     confidence: .high, reasons: ["Preferences"], sizeKB: 24),
+            Leftover(path: "\(home)/Library/Saved Application State/com.google.Chrome.savedState",
+                     confidence: .high, reasons: ["Saved Application State"], sizeKB: 96),
+            Leftover(path: "\(home)/Library/Caches/Chrome",
+                     confidence: .medium, reasons: ["Caches(名称)"], sizeKB: 3_565_158),
+            Leftover(path: "\(home)/Library/Logs/Chrome",
+                     confidence: .medium, reasons: ["Logs(名称)"], sizeKB: 2_048),
+            Leftover(path: "/Library/Application Support/Google",
+                     confidence: .low, reasons: ["厂商目录(system)"], sizeKB: 33_128),
+        ]
         return ScanResult(target: name, bundleID: bid, leftovers: items)
     }
 }

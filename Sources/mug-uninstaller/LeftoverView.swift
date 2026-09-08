@@ -14,6 +14,15 @@ struct LeftoverView: View {
     @State private var busy = false
     @State private var confirmVisible = false
 
+    init(app: AppInfo, initialResult: ScanResult? = nil) {
+        self.app = app
+        _result = State(initialValue: initialResult)
+        if let r = initialResult {
+            // 与 load() 默认策略一致：高/中置信勾选，低置信需人工确认
+            _selectedPaths = State(initialValue: Set(r.leftovers.filter { $0.confidence != .low }.map(\.path)))
+        }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -36,7 +45,9 @@ struct LeftoverView: View {
             }
         }
         .frame(minWidth: 620, minHeight: 460)
-        .onAppear(perform: load)
+        .onAppear {
+            if result == nil { load() }
+        }
         .alert("确认卸载 \(app.displayName)？", isPresented: $confirmVisible) {
             Button("取消", role: .cancel) {}
             Button("执行卸载", role: .destructive) { runUninstall() }
@@ -49,7 +60,7 @@ struct LeftoverView: View {
 
     private var header: some View {
         HStack(spacing: T.S.m) {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: app.path.path))
+            Image(nsImage: app.icon ?? NSWorkspace.shared.icon(forFile: app.path.path))
                 .resizable()
                 .frame(width: 28, height: 28)
             VStack(alignment: .leading, spacing: T.S.xs) {
@@ -249,6 +260,7 @@ struct LeftoverView: View {
 
     /// FDA 探针：无公开 API，试读 TCC 保护文件（Safari 的 CloudTabs.db）。
     static func hasFullDiskAccess() -> Bool {
+        if AppScanner.isMocking { return true }  // 截图中不显示警告横幅
         guard let data = try? Data(contentsOf: URL(fileURLWithPath: NSHomeDirectory()
             + "/Library/Safari/CloudTabs.db")) else { return false }
         return data.count > 0

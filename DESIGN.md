@@ -42,7 +42,7 @@ macOS 原生卸载工具的简洁克制界面：充足留白、单一主操作�
 | 组件 | 结构 |
 |---|---|
 | AppRow | 图标 32pt + 名称 / “版本 · 来源”两行 + 大小（右对齐）+ 徽标（运行中=accent、SIP=error）+ 垃圾桶（可删行=SIP 外的行，点击打开卸载，error 色） |
-| AppListStatusBar | “N 个应用 · M 个运行中”计数 + 「隐藏系统应用」开关（switch 样式，默认关=全部显示） |
+| AppListStatusBar | “N 个应用 · M 个运行中”计数 + 「隐藏系统应用」开关（switch 样式，默认开=隐藏系统应用；@AppStorage 持久化用户选择） |
 | ConfidenceDot | 8pt 圆点：high=accent、medium=gray、low=warning |
 | LeftoverRow | 复选框（整行可点）+ 圆点 + 截断路径 + 命中原因 + 大小 |
 | FooterBar | “已选 X/Y 项 · Z MB” + 全选 / 仅高置信 / 卸载…（error prominent，勾选为空或执行中禁用） |

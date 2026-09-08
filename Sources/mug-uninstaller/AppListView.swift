@@ -10,7 +10,12 @@ struct AppListView: View {
     @State private var selectedID: AppInfo.ID?
     @State private var opened: AppInfo?
     @State private var loading = false
-    @State private var hideSystem = false
+    /// 启动默认隐藏系统应用；用户手动开关后记住偏好
+    @AppStorage("hideSystemApps") private var hideSystem = true
+
+    init(initialApps: [AppInfo] = []) {
+        _apps = State(initialValue: initialApps)
+    }
 
     var filtered: [AppInfo] {
         apps.filter {
@@ -44,7 +49,9 @@ struct AppListView: View {
         .sheet(item: $opened) { app in
             LeftoverView(app: app)
         }
-        .onAppear(perform: reload)
+        .onAppear {
+            if apps.isEmpty { reload() }
+        }
     }
 
     // MARK: - 区块
@@ -83,7 +90,7 @@ struct AppListView: View {
 
     private func row(_ app: AppInfo, selected: Bool) -> some View {
         HStack(spacing: T.S.m) {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: app.path.path))
+            Image(nsImage: app.icon ?? NSWorkspace.shared.icon(forFile: app.path.path))
                 .resizable()
                 .frame(width: 32, height: 32)
             VStack(alignment: .leading, spacing: T.S.xs) {
