@@ -155,15 +155,15 @@ public enum LeftoverScanner {
         return ScanResult(target: name, bundleID: bid, leftovers: items)
     }
 
-    // MARK: - Mock 数据（README 截图用：脱敏残留路径）
+    // MARK: - Mock 数据（README 截图用：路径/内容均脱敏，不出现真实用户名或真实组件名）
 
     static func mockLeftovers(bid: String?, appName name: String) -> ScanResult {
-        let home = NSHomeDirectory()
+        let home = "/Users/mug"   // 虚构用户名，避免泄露真实 home 目录
         let items = [
             Leftover(path: "\(home)/Library/Application Support/Chrome",
                      confidence: .high, reasons: ["Application Support"], sizeKB: 1_258_291),
-            Leftover(path: "\(home)/Library/LaunchAgents/com.google.keystone.agent.plist",
-                     confidence: .high, reasons: ["Launch Label:com.google.keystone.agent"], sizeKB: 1),
+            Leftover(path: "\(home)/Library/LaunchAgents/com.google.Chrome.helper.agent.plist",
+                     confidence: .high, reasons: ["Launch Label:com.google.Chrome.helper.agent"], sizeKB: 1),
             Leftover(path: "\(home)/Library/Preferences/com.google.Chrome.plist",
                      confidence: .high, reasons: ["Preferences"], sizeKB: 24),
             Leftover(path: "\(home)/Library/Saved Application State/com.google.Chrome.savedState",
