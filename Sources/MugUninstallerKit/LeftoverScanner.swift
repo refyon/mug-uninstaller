@@ -51,6 +51,15 @@ public enum LeftoverScanner {
                 if let hit = match(entry) { add(dir + "/" + entry, hit.0, hit.1) }
             }
         }
+        /// vendor 前缀命中判定：`com.youqu.todesk.UninstallerHelper` 之于 bid `com.youqu.todesk.mac` 命中；
+        /// 兄弟产品 `com.deepseek.dsh-systray` 之于 bid `com.deepseek.dsh` **不**命中（它是另一个 app，
+        /// 删它的启动项属误伤）。判据：以 bid 开头且紧随字符既非 "." 也非结尾 → 兄弟产品。
+        func vendorPrefixHit(_ name: String, _ prefix: String) -> Bool {
+            guard name.hasPrefix(prefix + ".") else { return false }
+            guard let b = bid, name.hasPrefix(b) else { return true }
+            let rest = name.dropFirst(b.count)
+            return rest.isEmpty || rest.hasPrefix(".")
+        }
 
         let home = NSHomeDirectory()
         let lib = home + "/Library"
@@ -80,7 +89,7 @@ public enum LeftoverScanner {
                                 ("\(sysLib)/LaunchAgents", "LaunchAgents(system)"),
                                 ("\(sysLib)/LaunchDaemons", "LaunchDaemons")] {
                 addDir(d) { entry in
-                    entry.hasSuffix(".plist") && entry.hasPrefix(base + ".") ? (.high, reason) : nil
+                    entry.hasSuffix(".plist") && vendorPrefixHit(entry, base) ? (.high, reason) : nil
                 }
             }
             addDir("\(sysLib)/PrivilegedHelperTools") { entry in
@@ -118,7 +127,7 @@ public enum LeftoverScanner {
                 guard file.hasSuffix(".plist") else { return nil }
                 guard let dict = Support.readPlist(at: URL(fileURLWithPath: dir + "/" + file)),
                       let l = dict["Label"] as? String else { return nil }
-                if l == label || l.hasPrefix(label + ".") { return (conf, "\(reason):\(l)") }
+                if l == label || vendorPrefixHit(l, label) { return (conf, "\(reason):\(l)") }
                 return nil
             }
         }

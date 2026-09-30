@@ -36,8 +36,9 @@ struct LeftoverView: View {
                     emptyState
                 } else {
                     leftoverList(r)
-                    footer(r)
                 }
+                // 卸载按钮不能依赖残留：无残留时应只剩「移除应用本体」这一步
+                footer(r)
             } else {
                 Spacer()
                 ProgressView("正在扫描残留…")
@@ -52,7 +53,7 @@ struct LeftoverView: View {
             Button("取消", role: .cancel) {}
             Button("执行卸载", role: .destructive) { runUninstall() }
         } message: {
-            Text("将移除主程序与勾选的 \(selectedPaths.count) 项残留（移入废纸篓，可恢复）。root 文件删除时会弹出管理员授权。")
+            Text("将移除主程序\(selectedPaths.isEmpty ? "" : "与勾选的 \(selectedPaths.count) 项残留")（移入废纸篓，可恢复）。root 文件删除时会弹出管理员授权。")
         }
     }
 
@@ -145,25 +146,33 @@ struct LeftoverView: View {
                 logPanel
             }
             HStack(spacing: T.S.m) {
-                let selected = r.leftovers.filter { selectedPaths.contains($0.path) }
-                let selectedKB = selected.reduce(0) { $0 + max(0, $1.sizeKB) }
-                Text("已选 \(selected.count)/\(r.leftovers.count) 项 · \(String(format: "%.1f MB", Double(selectedKB) / 1024))")
+                Text(summaryText(r))
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
-                Button("全选") {
-                    selectedPaths = Set(r.leftovers.map(\.path))
+                if !r.leftovers.isEmpty {
+                    Button("全选") {
+                        selectedPaths = Set(r.leftovers.map(\.path))
+                    }
+                    Button("仅高置信") {
+                        selectedPaths = Set(r.leftovers.filter { $0.confidence == .high }.map(\.path))
+                    }
                 }
-                Button("仅高置信") {
-                    selectedPaths = Set(r.leftovers.filter { $0.confidence == .high }.map(\.path))
-                }
-                Button("卸载…", role: .destructive) { confirmVisible = true }
+                Button("卸载应用…", role: .destructive) { confirmVisible = true }
                     .buttonStyle(.borderedProminent)
                     .tint(T.error)
-                    .disabled(selectedPaths.isEmpty || busy)
+                    .disabled(busy)
             }
         }
         .padding(T.S.l)
+    }
+
+    /// 「应用本体（始终移除）+ 已选 N/M 项残留 · X MB」；无残留时只说明本体
+    private func summaryText(_ r: ScanResult) -> String {
+        guard !r.leftovers.isEmpty else { return "将移除应用本体，无残留可清理" }
+        let selected = r.leftovers.filter { selectedPaths.contains($0.path) }
+        let selectedKB = selected.reduce(0) { $0 + max(0, $1.sizeKB) }
+        return "应用本体 + 已选 \(selected.count)/\(r.leftovers.count) 项残留 · \(String(format: "%.1f MB", Double(selectedKB) / 1024))"
     }
 
     private var logPanel: some View {
@@ -185,7 +194,7 @@ struct LeftoverView: View {
                 .foregroundColor(T.accent)
             Text("未发现残留")
                 .font(.headline)
-            Text("该应用没有留下可清理的文件。")
+            Text("该应用没有留下可清理的文件，卸载只移除应用本体。")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
